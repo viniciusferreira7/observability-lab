@@ -10,6 +10,16 @@ distributor:
         http:
           endpoint: "0.0.0.0:4318"
 
+metrics_generator: 
+  registry: 
+    external_labels: 
+      source: tempo
+      cluster: docker-compose
+  storage: 
+    path: /tmp/tempo/generator/wal
+    remote_write:
+      - url: http://mimir:9090/api/v1/push
+
 storage:
   trace:
     backend: local
@@ -17,3 +27,10 @@ storage:
       path: /tmp/tempo/wal
     local:
       path: /tmp/tempo/blocks
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors:
+        - service-graphs
+        - span-metrics

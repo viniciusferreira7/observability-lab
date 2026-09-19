@@ -47,6 +47,27 @@ services:
       mimir:
         condition: service_started
 
+  otel:
+    image: otel/opentelemetry-collector:0.161.0-nightly.b1b196
+    container_name: otel
+    restart: unless-stopped
+    ports:
+      - 4317:4317
+      - 4318:4318
+      - 8888:8888
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./config/otel/otel.yaml:/etc/otelcol/config.yaml
+    depends_on:
+      loki:
+        condition: service_started
+      tempo:
+        condition: service_started
+      mimir:
+        condition: service_started
+      grafana:
+        condition: service_started
+
   # It won`t be used on this project
   promtail:
     image: grafana/promtail:3.6.11

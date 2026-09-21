@@ -15,11 +15,11 @@ receivers:
 
 processors: 
   batch:
-    resources:
-      attributes:
-        - action: insert
-          key: loki.resource,labels
-          value: service.name, service.environment
+  resources:
+    attributes:
+      - action: insert
+        key: loki.resource,labels
+        value: service.name, service.environment
 
 exporters: 
   otlphttp/loki: 
@@ -38,7 +38,24 @@ exporters:
     endpoint: http://mimir:9090/api/v1/push
     tls:
       insecure: true
-      
+
 extensions: 
+  health_check:
+  pprof: 
+  zpages: 
 
 services: 
+  extension: [health_check, pprof, zpages]
+  pipelines: 
+    logs:
+      receivers: [otlp]
+      processors: [resource, batch]
+      exporters: [otlphttp/loki]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/tempo]
+    metrics:
+       receivers: [otlp]
+       processors: [batch]
+       exporters: [prometheusremotewrite]

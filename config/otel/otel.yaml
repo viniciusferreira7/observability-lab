@@ -29,7 +29,7 @@ exporters:
     tls:
       insecure: true
 
-  otlp/tempo:
+  otlp/traces:
     endpoint: tempo:4317
     tls:
       insecure: true
@@ -71,7 +71,7 @@ service:
       processors:
         - batch
       exporters:
-        - otlp/tempo
+        - otlp/traces
 
     metrics:
       receivers:

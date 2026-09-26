@@ -1,61 +1,83 @@
 receivers:
-  otlp: 
+  otlp:
     protocols:
-      grpc: 
+      grpc:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-      prometheus:
-        config:
-          scrape_configs: 
-             - job_name: "otel-collector"
-               scrape_interval: 60s
-               static_configs: 
-                - targets: ["localhost:8888"]
 
-processors: 
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: "otel-collector"
+          scrape_interval: 60s
+          static_configs:
+            - targets: ["localhost:8888"]
+
+processors:
   batch:
-  resources:
+
+  resource:
     attributes:
       - action: insert
-        key: loki.resource,labels
-        value: service.name, service.environment
+        key: loki.resource.labels
+        value: service.name,service.environment
 
-exporters: 
-  otlphttp/loki: 
+exporters:
+  otlphttp/loki:
     endpoint: http://loki:3100/otlp/v1/logs
     tls:
-      insure: true
+      insecure: true
+
   otlp/tempo:
-    endpoint: tempo:3200
+    endpoint: tempo:4317
     tls:
       insecure: true
-  otlphttp/metrics: 
+
+  otlphttp/metrics:
     endpoint: http://mimir:9090/otlp/v1/metrics
     tls:
       insecure: true
-  prometheusremotewrite: 
+
+  prometheusremotewrite:
     endpoint: http://mimir:9090/api/v1/push
     tls:
       insecure: true
 
-extensions: 
+extensions:
   health_check:
-  pprof: 
-  zpages: 
+  pprof:
+  zpages:
 
-services: 
-  extension: [health_check, pprof, zpages]
-  pipelines: 
+service:
+  extensions:
+    - health_check
+    - pprof
+    - zpages
+
+  pipelines:
     logs:
-      receivers: [otlp]
-      processors: [resource, batch]
-      exporters: [otlphttp/loki]
+      receivers:
+        - otlp
+      processors:
+        - resource
+        - batch
+      exporters:
+        - otlphttp/loki
+
     traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp/tempo]
+      receivers:
+        - otlp
+      processors:
+        - batch
+      exporters:
+        - otlp/tempo
+
     metrics:
-       receivers: [otlp]
-       processors: [batch]
-       exporters: [prometheusremotewrite]
+      receivers:
+        - otlp
+        - prometheus
+      processors:
+        - batch
+      exporters:
+        - prometheusremotewrite

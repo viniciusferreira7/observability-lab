@@ -48,7 +48,7 @@ services:
         condition: service_started
 
   otel:
-    image: otel/opentelemetry-collector:0.161.0-nightly.b1b196
+    image: otel/opentelemetry-collector-contrib:nightly-arm64
     container_name: otel
     restart: unless-stopped
     ports:

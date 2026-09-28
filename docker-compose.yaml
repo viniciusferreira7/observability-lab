@@ -12,6 +12,9 @@ services:
     image: grafana/tempo:r268-049347c-2099-1
     container_name: tempo
     restart: unless-stopped
+    ports:
+      - 4327:4317
+      - 4328:4318
     command: ["-config.file=/etc/tempo.yaml"]
     volumes:
       - ./config/tempo/tempo.yaml:/etc/tempo.yaml

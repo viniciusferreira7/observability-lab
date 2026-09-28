@@ -24,8 +24,9 @@ processors:
         value: service.name,service.environment
 
 exporters:
+  
   otlphttp/loki:
-    endpoint: http://loki:3100/otlp/v1/logs
+    endpoint: http://loki:3100/otlp
     tls:
       insecure: true
 

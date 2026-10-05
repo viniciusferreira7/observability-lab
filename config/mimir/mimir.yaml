@@ -29,7 +29,7 @@ ingester:
     replication_factor: 1
 
 server:
-  http_listen_port: 9090
+  http_listen_port: 9008
   log_level: error
 
 store_gateway:

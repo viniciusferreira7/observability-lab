@@ -14,7 +14,7 @@ This stack is used by [fast-feet-api](https://github.com/viniciusferreira7/fast-
 | **Loki** | x.x.x | Log aggregation | 3100 |
 | **Grafana Tempo** | x.x.x | Distributed tracing | — (internal: 3200 HTTP, 4317 gRPC, 4318 OTLP HTTP) |
 | **Grafana Mimir** | x.x.x | Long-term metrics storage | 9008, 9009 |
-| **Prometheus** | `main-distroless` | Metrics (remote-write receiver enabled) | 9090 |
+| **Prometheus** | `main-distroless` | Metrics (remote-write receiver enabled) | 9008 |
 | **Garage** | x.x.x| S3-compatible object storage for Loki/Tempo/Mimir | 3900 (S3 API), 3903 (Admin API) |
 | **Grafana** | x.x.x | Visualization & dashboards | 3000 |
 

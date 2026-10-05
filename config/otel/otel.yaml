@@ -36,12 +36,12 @@ exporters:
       insecure: true
 
   otlphttp/metrics:
-    endpoint: http://mimir:9090/otlp/v1/metrics
+    endpoint: http://mimir:9008/otlp/v1/metrics
     tls:
       insecure: true
 
   prometheusremotewrite:
-    endpoint: http://mimir:9090/api/v1/push
+    endpoint: http://mimir:9008/api/v1/push
     tls:
       insecure: true
 

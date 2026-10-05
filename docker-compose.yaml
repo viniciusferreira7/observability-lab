@@ -24,10 +24,25 @@ services:
     container_name: mimir
     restart: unless-stopped
     ports:
-      - 9090:9090
+      - 9008:9008
+      - 9009:9009
     command: ["-config.file=/etc/mimir.yaml"]
     volumes:
       - ./config/mimir/mimir.yaml:/etc/mimir.yaml
+
+  prometheus:
+    image: prom/prometheus:v3.15.0-busybox
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - 9090:9090
+    command:
+      [
+        "--web.enable-remote-write-receiver",
+        "--config.file=/ect/prometheus/prometheus.yaml",
+      ]
+    volumes:
+      - ./config/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
 
   grafana:
     image: grafana/grafana:nightly-ubuntu

@@ -12,9 +12,10 @@ services:
     image: grafana/tempo:r268-049347c-2099-1
     container_name: tempo
     restart: unless-stopped
-    ports:
-      - 4327:4317
-      - 4328:4318
+    expose:
+      - 3200
+      - 4317
+      - 4318
     command: ["-config.file=/etc/tempo.yaml"]
     volumes:
       - ./config/tempo/tempo.yaml:/etc/tempo.yaml
@@ -70,9 +71,13 @@ services:
     container_name: otel
     restart: unless-stopped
     ports:
-      - 4317:4317
-      - 4318:4318
-      - 8888:8888
+      - 4317:4317 # gRpc
+      - 4318:4318 # Http
+      - 8888:8888 # prometheus-collector
+      - 8889:8889 # prometheus-exporter
+      - 1888:1888 # pprof
+      - 13133:13133 # health check
+      - 55679:55679 3 zpages
     command: ["--config=/etc/otelcol/config.yaml"]
     volumes:
       - ./config/otel/otel.yaml:/etc/otelcol/config.yaml

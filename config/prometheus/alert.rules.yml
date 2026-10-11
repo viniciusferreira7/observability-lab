@@ -1,0 +1,72 @@
+groups:
+  - name: marketplace
+    rules:
+      - alert: ServiceDown
+        expr: >-
+          max by (job) (max_over_time(target_info{job=~"api-gateway|users-service|products-service|checkout-service|payments-service"}[1h]))
+          unless
+          max by (job) (max_over_time(target_info{job=~"api-gateway|users-service|products-service|checkout-service|payments-service"}[1m]))
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} is down"
+          description: "{{ $labels.job }} reported metrics in the last hour but none in the last minute."
+
+      - alert: HighErrorRate
+        expr: >-
+          sum by (job) (rate(http_server_duration_milliseconds_count{job=~"api-gateway|users-service|products-service|checkout-service|payments-service", http_status_code=~"5.."}[1m]))
+          /
+          sum by (job) (rate(http_server_duration_milliseconds_count{job=~"api-gateway|users-service|products-service|checkout-service|payments-service"}[1m]))
+          > 0.1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} is failing more than 10% of requests"
+          description: "More than 10% of {{ $labels.job }} requests returned a 5xx over the last minute."
+
+      - alert: HighLatencyP95
+        expr: >-
+          histogram_quantile(0.95, sum by (job, le) (rate(http_server_duration_milliseconds_bucket{job=~"api-gateway|users-service|products-service|checkout-service|payments-service"}[5m])))
+          > 2000
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} P95 latency is above 2s"
+          description: "95% of {{ $labels.job }} requests took more than 2000ms over the last 5 minutes."
+
+      - alert: HighMemoryUsage
+        expr: >-
+          sum by (job) (v8js_memory_heap_used_bytes{job=~"api-gateway|users-service|products-service|checkout-service|payments-service"})
+          > 536870912
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} heap is above 512MB"
+          description: "{{ $labels.job }} has used more than 512MB of V8 heap for 2 minutes."
+
+      - alert: NoPaymentsProcessed
+        expr: >-
+          sum by (job) (increase(payment_gateway_requests_total{job="payments-service", operation="charge"}[5m]))
+          == 0
+        labels:
+          severity: info
+        annotations:
+          summary: "No payments processed in 5 minutes"
+          description: "{{ $labels.job }} charged nothing over the last 5 minutes."
+
+      - alert: HighPaymentRejectionRate
+        expr: >-
+          sum by (job) (rate(payment_gateway_requests_total{job="payments-service", operation="charge", outcome="rejected"}[5m]))
+          /
+          sum by (job) (rate(payment_gateway_requests_total{job="payments-service", operation="charge"}[5m]))
+          > 0.5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than half of the payment charges are rejected"
+          description: "Over the last 5 minutes more than 50% of {{ $labels.job }} charges were rejected."

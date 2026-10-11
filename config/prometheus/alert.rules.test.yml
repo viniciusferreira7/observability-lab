@@ -1,0 +1,251 @@
+rule_files:
+  - alert.rules.yml
+
+evaluation_interval: 15s
+
+tests:
+  # ServiceDown: users-service stops; api-gateway swaps instance; products never started; fast-feet stops.
+  - interval: 15s
+    input_series:
+      - series: 'target_info{job="users-service", instance="u1"}'
+        values: '1x10 _x30'
+      - series: 'target_info{job="api-gateway", instance="g1"}'
+        values: '1x10 _x30'
+      - series: 'target_info{job="api-gateway", instance="g2"}'
+        values: '_x10 1x30'
+      - series: 'target_info{job="fast-feet-api", instance="f1"}'
+        values: '1x10 _x30'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: ServiceDown
+        exp_alerts: []
+      # Silent since 150s, so active from 210s: still pending at 210s.
+      - eval_time: 3m30s
+        alertname: ServiceDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: ServiceDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: users-service
+            exp_annotations:
+              summary: "users-service is down"
+              description: "users-service reported metrics in the last hour but none in the last minute."
+
+  # ServiceDown clears once the service reports again.
+  - interval: 15s
+    input_series:
+      - series: 'target_info{job="users-service", instance="u1"}'
+        values: '1x10 _x12 1x20'
+    alert_rule_test:
+      - eval_time: 4m30s
+        alertname: ServiceDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: users-service
+            exp_annotations:
+              summary: "users-service is down"
+              description: "users-service reported metrics in the last hour but none in the last minute."
+      - eval_time: 8m
+        alertname: ServiceDown
+        exp_alerts: []
+
+  # HighErrorRate: checkout 25% and api-gateway 12% fire; payments 8%, users 1% and idle products (0/0) stay quiet; fast-feet 50% ignored.
+  - interval: 15s
+    input_series:
+      - series: 'http_server_duration_milliseconds_count{job="checkout-service", http_status_code="500"}'
+        values: '0+20x40'
+      - series: 'http_server_duration_milliseconds_count{job="checkout-service", http_status_code="200"}'
+        values: '0+60x40'
+      - series: 'http_server_duration_milliseconds_count{job="api-gateway", http_status_code="500"}'
+        values: '0+12x40'
+      - series: 'http_server_duration_milliseconds_count{job="api-gateway", http_status_code="200"}'
+        values: '0+88x40'
+      - series: 'http_server_duration_milliseconds_count{job="payments-service", http_status_code="500"}'
+        values: '0+8x40'
+      - series: 'http_server_duration_milliseconds_count{job="payments-service", http_status_code="200"}'
+        values: '0+92x40'
+      - series: 'http_server_duration_milliseconds_count{job="users-service", http_status_code="500"}'
+        values: '0+1x40'
+      - series: 'http_server_duration_milliseconds_count{job="users-service", http_status_code="200"}'
+        values: '0+99x40'
+      - series: 'http_server_duration_milliseconds_count{job="products-service", http_status_code="500"}'
+        values: '5x40'
+      - series: 'http_server_duration_milliseconds_count{job="products-service", http_status_code="200"}'
+        values: '0x40'
+      - series: 'http_server_duration_milliseconds_count{job="fast-feet-api", http_status_code="500"}'
+        values: '0+50x40'
+      - series: 'http_server_duration_milliseconds_count{job="fast-feet-api", http_status_code="200"}'
+        values: '0+50x40'
+    alert_rule_test:
+      # Condition holds from 15s; `for: 1m` keeps it pending at 45s.
+      - eval_time: 45s
+        alertname: HighErrorRate
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: HighErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: checkout-service
+            exp_annotations:
+              summary: "checkout-service is failing more than 10% of requests"
+              description: "More than 10% of checkout-service requests returned a 5xx over the last minute."
+          - exp_labels:
+              severity: warning
+              job: api-gateway
+            exp_annotations:
+              summary: "api-gateway is failing more than 10% of requests"
+              description: "More than 10% of api-gateway requests returned a 5xx over the last minute."
+
+  # HighLatencyP95: products ~4750ms and api-gateway ~2312ms fire; checkout ~1750ms and users <= 500ms quiet; fast-feet ignored.
+  - interval: 15s
+    input_series:
+      - series: 'http_server_duration_milliseconds_bucket{job="products-service", le="500"}'
+        values: '0+1x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="products-service", le="5000"}'
+        values: '0+10x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="products-service", le="+Inf"}'
+        values: '0+10x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="api-gateway", le="1000"}'
+        values: '0+60x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="api-gateway", le="2500"}'
+        values: '0+100x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="api-gateway", le="+Inf"}'
+        values: '0+100x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="checkout-service", le="1000"}'
+        values: '0+90x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="checkout-service", le="2500"}'
+        values: '0+100x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="checkout-service", le="+Inf"}'
+        values: '0+100x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="users-service", le="500"}'
+        values: '0+10x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="users-service", le="5000"}'
+        values: '0+10x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="users-service", le="+Inf"}'
+        values: '0+10x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="fast-feet-api", le="500"}'
+        values: '0+1x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="fast-feet-api", le="5000"}'
+        values: '0+10x40'
+      - series: 'http_server_duration_milliseconds_bucket{job="fast-feet-api", le="+Inf"}'
+        values: '0+10x40'
+    alert_rule_test:
+      - eval_time: 45s
+        alertname: HighLatencyP95
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: HighLatencyP95
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: products-service
+            exp_annotations:
+              summary: "products-service P95 latency is above 2s"
+              description: "95% of products-service requests took more than 2000ms over the last 5 minutes."
+          - exp_labels:
+              severity: warning
+              job: api-gateway
+            exp_annotations:
+              summary: "api-gateway P95 latency is above 2s"
+              description: "95% of api-gateway requests took more than 2000ms over the last 5 minutes."
+
+  # HighMemoryUsage: api-gateway 600MB and checkout 540MB fire; payments 530MB and products 100MB quiet; fast-feet ignored.
+  - interval: 15s
+    input_series:
+      - series: 'v8js_memory_heap_used_bytes{job="api-gateway", v8js_heap_space_name="old_space"}'
+        values: '400000000x20'
+      - series: 'v8js_memory_heap_used_bytes{job="api-gateway", v8js_heap_space_name="new_space"}'
+        values: '200000000x20'
+      - series: 'v8js_memory_heap_used_bytes{job="checkout-service", v8js_heap_space_name="old_space"}'
+        values: '540000000x20'
+      - series: 'v8js_memory_heap_used_bytes{job="payments-service", v8js_heap_space_name="old_space"}'
+        values: '530000000x20'
+      - series: 'v8js_memory_heap_used_bytes{job="products-service", v8js_heap_space_name="old_space"}'
+        values: '100000000x20'
+      - series: 'v8js_memory_heap_used_bytes{job="fast-feet-api", v8js_heap_space_name="old_space"}'
+        values: '900000000x20'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: HighMemoryUsage
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: HighMemoryUsage
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: api-gateway
+            exp_annotations:
+              summary: "api-gateway heap is above 512MB"
+              description: "api-gateway has used more than 512MB of V8 heap for 2 minutes."
+          - exp_labels:
+              severity: warning
+              job: checkout-service
+            exp_annotations:
+              summary: "checkout-service heap is above 512MB"
+              description: "checkout-service has used more than 512MB of V8 heap for 2 minutes."
+
+  # NoPaymentsProcessed: charges for 5 min, then idle; refunds keep flowing; fast-feet's flat counter is ignored.
+  - interval: 15s
+    input_series:
+      - series: 'payment_gateway_requests_total{job="payments-service", operation="charge", outcome="approved"}'
+        values: '0+5x20 100x40'
+      - series: 'payment_gateway_requests_total{job="payments-service", operation="refund", outcome="approved"}'
+        values: '0+5x60'
+      - series: 'payment_gateway_requests_total{job="fast-feet-api", operation="charge", outcome="approved"}'
+        values: '100x60'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: NoPaymentsProcessed
+        exp_alerts: []
+      - eval_time: 12m
+        alertname: NoPaymentsProcessed
+        exp_alerts:
+          - exp_labels:
+              severity: info
+              job: payments-service
+            exp_annotations:
+              summary: "No payments processed in 5 minutes"
+              description: "payments-service charged nothing over the last 5 minutes."
+
+  # HighPaymentRejectionRate: 55% rejected fires after `for: 2m`.
+  - interval: 15s
+    input_series:
+      - series: 'payment_gateway_requests_total{job="payments-service", operation="charge", outcome="approved"}'
+        values: '0+9x40'
+      - series: 'payment_gateway_requests_total{job="payments-service", operation="charge", outcome="rejected"}'
+        values: '0+11x40'
+      - series: 'payment_gateway_requests_total{job="payments-service", operation="charge", outcome="failed"}'
+        values: '0x40'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: HighPaymentRejectionRate
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: HighPaymentRejectionRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: payments-service
+            exp_annotations:
+              summary: "More than half of the payment charges are rejected"
+              description: "Over the last 5 minutes more than 50% of payments-service charges were rejected."
+
+  # HighPaymentRejectionRate: 45% rejected stays quiet, despite rejected refunds and fast-feet rejections.
+  - interval: 15s
+    input_series:
+      - series: 'payment_gateway_requests_total{job="payments-service", operation="charge", outcome="approved"}'
+        values: '0+11x40'
+      - series: 'payment_gateway_requests_total{job="payments-service", operation="charge", outcome="rejected"}'
+        values: '0+9x40'
+      - series: 'payment_gateway_requests_total{job="payments-service", operation="refund", outcome="rejected"}'
+        values: '0+10x40'
+      - series: 'payment_gateway_requests_total{job="fast-feet-api", operation="charge", outcome="rejected"}'
+        values: '0+10x40'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: HighPaymentRejectionRate
+        exp_alerts: []

@@ -74,7 +74,6 @@ services:
       - 4317:4317 # gRpc
       - 4318:4318 # Http
       - 8888:8888 # prometheus-collector
-      - 8889:8889 # prometheus-exporter
       - 1888:1888 # pprof
       - 13133:13133 # health check
       - 55679:55679 # zpages

@@ -77,7 +77,7 @@ services:
       - 8889:8889 # prometheus-exporter
       - 1888:1888 # pprof
       - 13133:13133 # health check
-      - 55679:55679 3 zpages
+      - 55679:55679 # zpages
     command: ["--config=/etc/otelcol/config.yaml"]
     volumes:
       - ./config/otel/otel.yaml:/etc/otelcol/config.yaml

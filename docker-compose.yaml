@@ -40,10 +40,10 @@ services:
     command:
       [
         "--web.enable-remote-write-receiver",
-        "--config.file=/ect/prometheus/prometheus.yaml",
+        "--config.file=/etc/prometheus/prometheus.yaml",
       ]
     volumes:
-      - ./config/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - ./config/prometheus:/etc/prometheus:ro
 
   grafana:
     image: grafana/grafana:nightly-ubuntu

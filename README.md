@@ -66,3 +66,6 @@ Dashboards in `config/grafana/dashboards/` are provisioned read-only.
 
 - **Overview** (`/d/marketplace-overview`) — firing alert counts per severity and a
   table of the marketplace alerts currently pending or firing.
+- **Services** (`/d/marketplace-services`) — per-service HTTP rate, 5xx ratio and p95
+  latency, outbound HTTP, database queries and pool, broker connections, and Node.js
+  runtime (event loop, heap, GC), filtered by the `Service` variable.

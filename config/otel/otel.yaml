@@ -36,7 +36,10 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
-
+  prometheus: 
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
   prometheusremotewrite:
     endpoint: http://prometheus:9090/api/v1/write
     tls:
@@ -79,3 +82,4 @@ service:
         - batch
       exporters:
         - prometheusremotewrite
+        - prometheus

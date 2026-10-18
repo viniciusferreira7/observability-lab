@@ -67,6 +67,8 @@ services:
         condition: service_started
       mimir:
         condition: service_started
+      prometheus:
+        condition: service_started
 
   otel:
     image: otel/opentelemetry-collector-contrib:0.161.0

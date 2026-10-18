@@ -95,9 +95,9 @@ services:
         condition: service_started
 
   # It won`t be used on this project
-  promtail:
-    image: grafana/promtail:3.6.11
-    container_name: promtail
-    volumes:
-      - /var/log:/var/log
-    command: ["-config.file=/etc/promtail/config.yml"]
+  # promtail:
+  #   image: grafana/promtail:3.6.11
+  #   container_name: promtail
+  #   volumes:
+  #     - /var/log:/var/log
+  #   command: ["-config.file=/etc/promtail/config.yml"]

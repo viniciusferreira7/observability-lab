@@ -7,6 +7,19 @@ services:
       - 3100:3100
       - 7946
       - 9095
+  silo:
+    image: pgsty/silo:distroless
+    container_name: silo
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - 9000:9000 # S3 API
+      - 9001:9001 # Web Console
+    environment:
+      MINIO_ROOT_USER: ${SILO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${SILO_ROOT_PASSWORD}
+    volumes:
+      - silo-data:/data
 
   tempo:
     image: grafana/tempo:r268-049347c-2099-1
@@ -94,6 +107,8 @@ services:
       grafana:
         condition: service_started
 
+volumes:
+  silo-data:
   # It won`t be used on this project
   # promtail:
   #   image: grafana/promtail:3.6.11
